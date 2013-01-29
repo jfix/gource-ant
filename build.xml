@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="gource" default="usage" basedir=".">
+
+    <!-- Environment property -->
+    <property file="kappa.properties"/>
+
+    <target name="usage">
+        <echo>
+targets
+=====================
+make-film             does everything to generate the film
+run-gource            creates screenshots (everything except film)
+=====================
+        </echo>
+    </target>
+    
+    <target name="svn-update">
+        <exec executable="${svn.exe}" dir="${svn.dir}">
+            <arg value="update"/>
+        </exec>       
+        <echo>*** updated working copy to HEAD</echo>
+    </target>
+    
+    <target name="svn-xml-log" depends="svn-update">
+        <!-- 
+        svn log -r 1:HEAD -\-xml -\-verbose -\-quiet > my-project-log.xml
+        -->
+        <exec executable="${svn.exe}" dir="${svn.dir}" 
+            output="${basedir}/${project.name}-tmp.xml">
+            <arg line="log -r 1:HEAD --xml --verbose --quiet"/>
+        </exec>       
+        <echo>*** dumped SVN log file</echo>
+    </target>
+    
+    <target name="clean-author-names" depends="svn-xml-log">
+        <xslt classpath="libs/saxon9he.jar"
+            basedir="${basedir}" 
+            style="authors.xsl" 
+            in="${project.name}-tmp.xml"
+            out="${project.name}-gource.xml">
+            <factory name="net.sf.saxon.TransformerFactoryImpl"/>
+        </xslt>
+        <delete file="${project.name}-tmp.xml" failonerror="false"/>
+        <echo>*** human-readable author names</echo>
+    </target>
+    
+    <target name="run-gource">
+        <exec executable="${gource.exe}" dir="${basedir}">
+            <arg line="-1280x720 -o ${project.name}.ppm ${project.name}-gource.xml"/>
+        </exec>
+        <!-- 
+        gource -1280x720 -o gource.ppm C:\\path\\to\\code\\repository
+        -->
+    </target>
+    
+    <target name="make-film">
+        <!-- 
+        C:\\ffmpeg\\bin\\ffmpeg -y -r 60 -f image2pipe -vcodec ppm -i gource.ppm -vcodec libx264 -preset ultrafast -crf 1 -threads 0 -bf 0 gource.x264.avi
+        -->
+    </target>
+</project>
