@@ -2,7 +2,7 @@
 <project name="gource" default="usage" basedir=".">
 
     <!-- Environment property -->
-    <property file="kappa.properties"/>
+    <property file="${project}.properties"/>
 
     <target name="usage">
         <echo>
@@ -10,8 +10,16 @@ targets
 =====================
 make-film             does everything to generate the film
 run-gource            creates screenshots (everything except film)
+
+usage
 =====================
+ant -Dproject=[project-name] make-film
+
         </echo>
+    </target>
+    
+    <target name="all" depends="clean-author-names, run-gource, make-film">
+        <echo>*** this should have generated a film ...</echo>    
     </target>
     
     <target name="svn-update">
@@ -44,9 +52,9 @@ run-gource            creates screenshots (everything except film)
         <echo>*** human-readable author names</echo>
     </target>
     
-    <target name="run-gource">
+    <target name="run-gource" depends="svn-xml-log">
         <exec executable="${gource.exe}" dir="${basedir}">
-            <arg line="-1280x720 -o ${project.name}.ppm ${project.name}-gource.xml"/>
+            <arg line="-1280x720 -o ${project.name}.ppm --title '${project.title}'  --load-config gource.config ${project.name}-gource.xml "/>
         </exec>
         <!-- 
         gource -1280x720 -o gource.ppm C:\\path\\to\\code\\repository
@@ -54,6 +62,9 @@ run-gource            creates screenshots (everything except film)
     </target>
     
     <target name="make-film">
+        <exec executable="${ffmpeg.exe}">
+            <arg line="-y -r 60 -f image2pipe -vcodec ppm -i ${project.name}.ppm -vcodec libx264 -preset ultrafast -crf 1 -threads 0 -bf 0 ${project.name}.x264.avi"/>
+        </exec>
         <!-- 
         C:\\ffmpeg\\bin\\ffmpeg -y -r 60 -f image2pipe -vcodec ppm -i gource.ppm -vcodec libx264 -preset ultrafast -crf 1 -threads 0 -bf 0 gource.x264.avi
         -->
