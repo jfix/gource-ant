@@ -8,10 +8,13 @@
         <echo>
 targets
 =====================
-make-film             does everything to generate the film
+all                   does everything to end up with a film file
 run-gource            creates screenshots (everything except film)
-
-usage
+make-film             uses ppm as input for ffmpeg to create x264 file
+svn-update            simply execute an SVN update (useful to get latest version)
+svn-xml-log           create an XML file that can be used by Gource
+clean-author-names    replace logins with "real" names (but what do you know!?)
+usage                 this message
 =====================
 ant -Dproject=[project-name] make-film
 
@@ -54,7 +57,7 @@ ant -Dproject=[project-name] make-film
     
     <target name="run-gource" depends="svn-xml-log">
         <exec executable="${gource.exe}" dir="${basedir}">
-            <arg line="-1280x720 -o ${project.name}.ppm --title '${project.title}'  --load-config gource.config ${project.name}-gource.xml "/>
+            <arg line="-o ${project.name}.ppm --title '${project.title}' --load-config gource.config ${project.name}-gource.xml "/>
         </exec>
         <!-- 
         gource -1280x720 -o gource.ppm C:\\path\\to\\code\\repository
