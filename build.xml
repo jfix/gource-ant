@@ -8,12 +8,14 @@
         <echo>
 targets
 =====================
-all                   does everything to end up with a film file
-run-gource            creates screenshots (everything except film)
-make-film             uses ppm as input for ffmpeg to create x264 file
+all                   does everything to end up with a film file (usually this is what you want)
+
 svn-update            simply execute an SVN update (useful to get latest version)
 svn-xml-log           create an XML file that can be used by Gource
 clean-author-names    replace logins with "real" names (but what do you know!?)
+make-ppm              creates screenshots in ppm format based on svn xml log file
+make-film             uses ppm as input for ffmpeg to create x264 file
+
 usage                 this message
 =====================
 ant -Dproject=[project-name] make-film
@@ -21,8 +23,8 @@ ant -Dproject=[project-name] make-film
         </echo>
     </target>
     
-    <target name="all" depends="clean-author-names, run-gource, make-film">
-        <echo>*** this should have generated a film ...</echo>    
+    <target name="all" depends="svn-update, svn-xml-log, clean-author-names, make-ppm, make-film">
+        <echo>*** this should have generated a film in out/ ...</echo>    
     </target>
     
     <target name="svn-update">
@@ -32,44 +34,41 @@ ant -Dproject=[project-name] make-film
         <echo>*** updated working copy to HEAD</echo>
     </target>
     
-    <target name="svn-xml-log" depends="svn-update">
+    <target name="svn-xml-log"
+        >
         <!-- 
         svn log -r 1:HEAD -\-xml -\-verbose -\-quiet > my-project-log.xml
         -->
         <exec executable="${svn.exe}" dir="${svn.dir}" 
-            output="${basedir}/${project.name}-tmp.xml">
+            output="${basedir}/out/${project.name}-tmp.xml">
             <arg line="log -r 1:HEAD --xml --verbose --quiet"/>
         </exec>       
         <echo>*** dumped SVN log file</echo>
     </target>
     
-    <target name="clean-author-names" depends="svn-xml-log">
+    <target name="clean-author-names">
         <xslt classpath="libs/saxon9he.jar"
             basedir="${basedir}" 
             style="authors.xsl" 
-            in="${project.name}-tmp.xml"
-            out="${project.name}-gource.xml">
+            in="out/${project.name}-tmp.xml"
+            out="out/${project.name}-gource.xml">
             <factory name="net.sf.saxon.TransformerFactoryImpl"/>
         </xslt>
-        <delete file="${project.name}-tmp.xml" failonerror="false"/>
+        <delete file="out/${project.name}-tmp.xml" failonerror="false"/>
         <echo>*** human-readable author names</echo>
     </target>
     
-    <target name="run-gource" depends="svn-xml-log">
+    <target name="make-ppm">
         <exec executable="${gource.exe}" dir="${basedir}">
-            <arg line="-o ${project.name}.ppm --title '${project.title}' --load-config gource.config ${project.name}-gource.xml "/>
+            <arg line="-o out/${project.name}.ppm --title '${project.title}' --load-config gource.config out/${project.name}-gource.xml "/>
         </exec>
-        <!-- 
-        gource -1280x720 -o gource.ppm C:\\path\\to\\code\\repository
-        -->
+        <echo>*** created a huge PPM file containing screenshots</echo>
     </target>
     
     <target name="make-film">
+        <echo>*** now going to create a libx264 video file</echo>
         <exec executable="${ffmpeg.exe}">
-            <arg line="-y -r 60 -f image2pipe -vcodec ppm -i ${project.name}.ppm -vcodec libx264 -preset ultrafast -crf 1 -threads 0 -bf 0 ${project.name}.x264.avi"/>
+            <arg line="-y -r 60 -f image2pipe -vcodec ppm -i out/${project.name}.ppm -vcodec libx264 -pix_fmt yuv420p -preset ultrafast -crf 1 -threads 0 -bf 0 out/${project.name}.x264.avi"/>
         </exec>
-        <!-- 
-        C:\\ffmpeg\\bin\\ffmpeg -y -r 60 -f image2pipe -vcodec ppm -i gource.ppm -vcodec libx264 -preset ultrafast -crf 1 -threads 0 -bf 0 gource.x264.avi
-        -->
     </target>
 </project>
